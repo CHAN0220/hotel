@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.mapper.PowerMapper">
+
+	<!--查询所有用户信息 -->
+	<select id="selectUsers" resultType="User">
+		select * from user;
+	</select>
+	
+	<!-- 根据用户账号查询用户 权限id-->
+	<select id="selectPowerIdByUserId" parameterType="String" resultType="String">
+		select powerId from role where userId=#{userId};
+	</select>
+	
+	<!-- 根据用户 权限id查询用权限-->
+	<select id="selectPowerByPowerId" parameterType="String" resultType="String">
+		select power from power where powerId=#{powerId};
+	</select>
+	
+	<!-- 更新用户权限id信息 -->
+	<update id="updateRole" parameterType="Role">
+		update role
+	 	<set>
+		  <if test="powerId!=null and powerId!=''">
+		  	powerId=#{powerId},
+		  </if>
+		</set>
+		where userId=#{userId};
+	</update>
+	
+	<!-- 根据用户账号删除用户 -->
+	<delete id="deleteUser" parameterType="String">
+		delete from user where userId=#{userId};
+		<!-- delete from role where userId=#{userId}; -->
+	</delete>
+</mapper>

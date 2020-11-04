@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.mapper.UserMapper">
+	<!-- 根据用户账号密码，查询用户 -->
+	<select id="selectUserByUserIdAP" parameterType="String" resultType="User">
+		select * from user where userId=#{userId} and password=#{password};
+	</select>
+	<!-- 增加用户 -->
+	<insert id="insertUser" parameterType="User">
+		insert into user(userId, password, uname, uTel, age, uSex) values(#{userId},#{password},#{uname},#{uTel},#{age},#{uSex});
+	</insert>
+	<!-- 增加用户角色 -->
+	<insert id="insertRole" parameterType="String">
+		insert into role(userId, powerId) values(#{userId},'1');
+	</insert>
+	<!-- 根据用户账号查询用户 -->
+	<select id="selectUserByUserId" parameterType="String" resultType="User">
+		select * from user where userId=#{userId};
+	</select>
+	<!-- 更新用户信息 -->
+	<update id="updateUser" parameterType="User">
+		update user
+	 	<set>
+		  <if test="password!=null and password!=''">
+		  	password=#{password},
+		  </if>
+		  <if test="uTel!=null and uTel!=''">
+		  	uTel=#{uTel},
+		  </if>
+		   <if test="uname!=null and uname!=''">
+		  	uname=#{uname},
+		  </if>
+		   <if test="age!=null and age!=''">
+		  	age=#{age},
+		  </if>
+		   <if test="uSex!=null and uSex!=''">
+		  	uSex=#{uSex},
+		  </if>
+		</set>
+		where userId=#{userId};
+	</update>
+	<!-- 按课程名查询课程信息  -->
+	<!-- <select id="selectCourseByCuname" parameterType="String" resultType="Course">
+		<bind uname="cuname" value="'%'+cuname+'%'" />
+		select * from course
+		<where>
+			<if test="cuname!=null and cuname!=''">
+				and cuname like #{cuname}
+			</if>
+		</where>
+	</select>
+	-->
+</mapper>

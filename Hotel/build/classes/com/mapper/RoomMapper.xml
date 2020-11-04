@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.mapper.RoomMapper">
+	<!-- 增加房间 -->
+	<insert id="insertRoom" parameterType="Room">
+	    insert into room(roomId, rState, rTypeId, price) values(#{roomId},#{rState},#{rTypeId},#{price});
+	</insert>
+	<!-- 根据房间号查询房间 -->
+	<select id="selectRoomByRoomId" parameterType="String" resultType="Room">
+		select * from room where roomId=#{roomId};
+	</select>
+	<!-- 根据房间号删除房间 -->
+	<delete id="deleteRoom" parameterType="String">
+		delete from room where roomId=#{roomId};
+	</delete>
+</mapper>

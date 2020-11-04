@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.mapper.ReceptionMapper">
+	<!-- 增加用户 -->
+	<insert id="insertCustomer" parameterType="Customer">
+		insert into customer(cName, cSex, cIDCard, cTel, cDeposit, roomId) values(#{cName},#{cSex},#{cIDCard},#{cTel},#{cDeposit},#{roomId});
+	</insert>
+	<!-- 根据客户Id号删除客户资料 -->
+	<delete id="deleteCustomer" parameterType="String">
+		delete from customer where customerId=#{customerId};
+	</delete>
+	<!-- 根据房间号查询房间 -->
+	<select id="selectRoomByRoomId" parameterType="String" resultType="Room">
+		select * from room where roomId=#{roomId};
+	</select>
+	<!-- 查询所有客户 -->
+	<select id="selectCustomer" resultType="Customer">
+		select * from customer;
+	</select>
+	<!-- 根据客户Id查询客户 -->
+	<select id="selectCustomerByCustomerId" parameterType="String" resultType="Customer">
+		select * from customer where customerId=#{customerId};
+	</select>
+	<!-- 按客户名查询客户  -->
+	<select id="selectCustomerBycName" parameterType="String" resultType="Customer">
+		<bind name="cName" value="'%'+cName+'%'" />
+		select * from customer
+		<where>
+			<if test="cName!=null and cName!=''">
+				and cName like #{cName}
+			</if>
+		</where>
+	</select>
+	<!-- 查询所有的房间 -->
+	<select id="selectRoom" resultType="Room">
+		select * from room;
+	</select>
+	<!-- 根据状态、类型查询房间 -->
+	<select id="selectSpareRoom" parameterType="String" resultType="Room">
+		select * from room where 1=1 
+		<choose>
+			<when test="rState != null and rState != '' and  rTypeId != null and  rTypeId != ''">
+				and rState=#{rState} and rTypeId=#{rTypeId}
+			</when>
+			<when test="rState = null and rState = '' and  rTypeId != null and  rTypeId != ''">
+				and rTypeId=#{rTypeId}
+			</when>
+			<when test="rState != null and rState != '' and  rTypeId = null and  rTypeId = ''">
+				and rState=#{rState}
+			</when>
+		</choose>
+		<!-- rState=#{rState} and rTypeId=#{rTypeId} ; -->
+	</select>
+	<!-- 根据状态查询房间 -->
+	<select id="selectSpareRoomByrState" parameterType="String" resultType="Room">
+		select * from room where rState=#{rState} ;
+	</select>
+	<!-- 根据类型查询房间 -->
+	<select id="selectSpareRoomByrTypeId" parameterType="String" resultType="Room">
+		select * from room where rTypeId=#{rTypeId} ;
+	</select>
+	<!-- 更新房间状态 -->
+	<update id="updateRoomState" parameterType="String">
+		update room
+	 	<set>
+		  <if test="rState!=null and rState!=''">
+		  	rState=#{rState},
+		  </if>
+		  <!-- <if test="rTypeId!=null and rTypeId!=''">
+		  	rTypeId=#{rTypeId},
+		  </if>
+		  <if test="price!=null and price!=''">
+		  	price=#{price},
+		  </if> -->
+		</set>
+		where roomId=#{roomId};
+	</update>
+	<!-- 根据房间号删除房间 -->
+	<delete id="deleteRoom" parameterType="String">
+		delete from room where roomId=#{roomId};
+	</delete>
+	<!-- 根据客户Id查询客户入住类型Id -->
+	<select id="selectCustomerCheckInId" parameterType="String" resultType="String">
+		select checkInId from customercheckin where customerId=#{customerId}
+	</select>
+	<!-- 根据客户入住类型Id查询客户类型 -->
+	<select id="selectCustomerCheckInType" parameterType="String" resultType="String">
+		select checkInId from checkintype where checkInId=#{checkInId}
+	</select>
+	<!-- 根据客户入住类型Id查询折扣 -->
+	<select id="selectDiscountByCheckInId" parameterType="String" resultType="double">
+		select discount from checkintype where checkInId=#{checkInId}
+	</select>
+	<!-- 增加订单 -->
+	<insert id="insertOrder" parameterType="Order">
+		insert into `order`(orderId, roomId, orderIn, orderOut, orderCost, orderRealCost) values(#{orderId}, #{roomId},#{orderIn},#{orderOut},#{orderCost},#{orderRealCost});
+	</insert>
+	<!-- 增加订单 -->
+	<insert id="insertCustomerCheckIn" parameterType="CustomerCheckIn">
+		insert into `customercheckin`(customerId, checkInId) values(#{customerId}, #{checkInId});
+	</insert>
+</mapper>
