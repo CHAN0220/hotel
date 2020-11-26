@@ -1,0 +1,258 @@
+
+springboot-ssm-h2 
+ 
+
+ 
+
+
+   转至元数据结尾 
+
+由 未知用户 (asnpijz)创建, 最后修改于一月 17, 2020 
+转至元数据起始 
+
+
+Mybatis introduction?
+
+1.MyBatis is a first class persistence framework with support for custom SQL, stored procedures and advanced mappings. MyBatis can use simple XML or Annotations for configuration and map primitives, Map interfaces and Java POJOs (Plain Old Java Objects) to database records.
+
+
+          sturdy address:
+
+                     1).(Myabtis documention)  https://mybatis.org/mybatis-3/getting-started.html 
+
+                     2).(springboot-myabtis documention)   http://mybatis.org/spring-boot-starter/mybatis-spring-boot-autoconfigure/
+
+     2. XML Configuration level:
+
+
+
+
+
+
+
+properties 
+
+
+
+（Used throughout the configuration file to replace attribute values that need to be dynamically configured）
+
+property、resource
+ 
+
+
+
+ 
+
+
+
+
+
+
+ 
+
+settings 
+（They change the runtime behavior of MyBatis）
+
+cacheEnable、lazyLoadingEnabled 、logImpl
+ 
+typeAliases 
+（Used to reduce redundancy in fully qualified names of classes）
+
+typeAlias 、package、@Alias 
+ 
+typeHandlers 
+（Convert the obtained value to a Java type in a suitable way）
+ 
+environments 
+（MyBatis can be configured to adapt to multiple environments, this mechanism helps to apply SQL mapping to multiple databases）
+environment 、transactionManager 、dataSource 
+ 
+mappers 
+（Tell mybatis where to find the mapping file）
+mapper resource
+ 
+
+   
+
+  3.XML Mapping file(**core   Same function as jdbc**)
+
+1）、select insert、update、and delete and their property
+
+
+
+
+
+
+
+property 
+
+
+description 
+
+
+
+
+ 
+
+
+ 
+
+
+id A unique identifier in the namespace can be used to reference this statement. 
+parameterType The fully qualified name or alias of the parameter class that will be passed in this statement 
+resultType The fully qualified name or alias of the class of the desired type returned from this statement 
+resultMap A named reference to the external resultMap. Mapping of result sets is the most powerful feature of MyBatis 
+useCache Setting it to true will cause the result of this statement to be cached by the secondary cache 
+resultSets list the result sets returned after the statement is executed and give each result set a name 
+
+2）、Result mapping（resultMap）
+
+
+
+
+
+
+
+property 
+
+
+description 
+
+
+
+
+ 
+
+
+ 
+
+
+id  Marking out results as IDs can help improve overall performance 
+type The fully qualified name of the class, or a type alias 
+result  Normal results injected into fields or JavaBean properties 
+constructor  Used to inject results into the constructor when instantiating a class 
+collection A complex type collection (one2many) 
+association  A complex type of association (many2one) 
+
+
+
+
+H2 DataBase introduction?
+•Very fast, open source, JDBC API
+•Embedded and server modes; in-memory databases
+•Browser based Console application
+•Small footprint: around 2 MB jar file size
+
+1.h2 supports three modes of operation
+Embedded 
+In-Memory
+ServerMode
+1)、Embedded (local) connection to H2 database
+  jdbc:h2:[file:][<path>]<databaseName>
+  jdbc:h2:~/test
+  jdbc:h2:file:/data/sample
+2）、Connect to H2 database using TCP / IP server mode (remote connection)
+   jdbc:h2:tcp://<server>[:<port>]/[<path>]<databaseName>
+  jdbc:h2:tcp://localhost/~/test
+  jdbc:h2:tcp://dbserv:8084/~/sample
+
+          3）、Database URL for memory mode
+
+              jdbc:h2:mem:
+              jdbc:h2:mem:<databaseName>
+
+
+
+
+MyDemo Show
+
+1、Build a project（choose dependency and download）
+         
+2、Project construction
+
+
+
+3、Finish application.properties
+server.port=8083
+#connect
+spring.datasource.driver-class-name=org.h2.Driver
+spring.datasource.url=jdbc:h2:~/test;AUTO_SERVER=TRUE
+spring.datasource.data-username=sa
+spring.datasource.data-password=
+#h2
+spring.h2.console.settings.web-allow-others=true
+spring.h2.console.path=/h2-console
+spring.h2.console.enabled=true
+#logging
+logging.level.com.example.demo.dao=debug
+#endpoint
+management.endpoints.enabled-by-default=true
+#mybatis
+mybatis.mapper-locations=classpath:mapper/*.xml
+mybatis.type-aliases-package=com.example.demo.entity
+
+
+4、Entity
+
+
+
+
+
+5、mapper.xml Configuration
+
+5.1)PlayersMapper.xml
+
+
+
+
+（嵌套结果）
+
+(嵌套sql)
+
+
+
+
+
+
+
+5.2)TeamsMapper.xml
+
+
+
+
+
+6、Controller 
+
+6.1）PlayersController
+
+
+
+6.2）TeamsController
+
+
+
+
+
+
+
+
+7、Experiment and test
+
+7.1）H2-Console
+
+
+
+7.2）Swagger test
+
+
+
+7.3）Vue Show
+
+
+
+
+
+
+
+
+
