@@ -1,0 +1,305 @@
+学习资料
+Activiti【对于框架的流程控制,着重关注于任务节点（gateway）的处理】
+
+ 
+
+What is workflow?
+
+将一组任务组织起来完成某个经营过程，定义了任务的触发顺序和触发条件，每个任务可以由一个或多个软件系统完成，也可以由一个或一组人完成，还可以由一个或多个人与软件系统协作完。
+
+开发环境： jdk 数据库 spring  activiti6（springboot2.0一下）、activiti7的话建议boot2.0。Activiti7和springsecurity强耦合，引导我们必须SpringSecurity加入。
+
+Activiti与bpmn2.0规范：https://www.jianshu.com/p/e25fdc595f86
+
+内容非常丰富activiti26连载(查看作者发布空间)：https://my.oschina.net/JavaLaw/blog/1542434
+
+
+
+
+
+
+
+1、核心API 
+
+ProcessEngineConfiguration:流程引擎配置。
+
+ProcessEngine:流程引擎
+
+核心七大接口
+
+RepositoryService：提供一系列管理流程部署和流程定义的API。
+
+RuntimeService：在流程运行时对流程实例进行管理与控制。
+
+TaskService：对流程任务进行管理，例如任务提醒、任务完成和创建任务等。
+
+IdentityService：提供对流程角色数据进行管理的API，这些角色数据包括用户组、用户及它们之间的关系。
+
+ManagementService：提供对流程引擎进行管理和维护的服务，提供对activiti数据库的直接访问【一般不用】
+
+HistoryService：对流程的历史数据进行操作，包括查询、删除这些历史数据。FormService：表单服务
+
+ 
+
+大致步骤：
+
+1、    设计流程，即完成流程图(将流程图放入到resource下的processes文件夹下，没有的新建一个)
+
+2、    配置流程引擎(在yml中配置activiti数据源及规则)、
+
+3、    加载流程文件(应用启动时加载流程配置文件，启动后会自动生成28张表)
+
+4、    流程部署——【RepositoryService(核心API)】(原生spring会根据加载procees下文件并且开启ProcessEngine。Springboot下会自动加载)
+
+ 
+
+5、    启动流程(【RuntimeService(核心API)】根据xml文件中的process id启动流程)
+
+6、    查询当前任务【TaskService】根据taskid查询相关的流程任务状况。Taskid是变化的,没完成一级操作，taskid都会变动一次。
+
+7、    结束当前任务【taskservie.complete(taskid)】流程结束后。
+
+
+
+
+
+
+
+
+
+
+任务分配
+
+UEL表达式分配${expression}
+
+UEL-method方法${user.assignee}对象打点的方式。User.assignee表示通过user的getter方法获取值
+
+UEL-method与UEL-value结合将method为key组成一个map集合
+
+${assignee}相当于key，value在后面的java代码中进行设置。
+
+ 
+
+TaskListener(可以在这里绑定相关的类)——-当监听器触发并且工作的时候，就回去调用绑定的类。
+
+该类必须实行TaskListener接口，重写notify方法。
+
+ 
+
+流程运行过程中，加入流程变量进行流程变化。流程变量要实现serializable接口 (让pojo对象实现序列化接口)
+
+全局流程变量——(作用于整个流程中)global 变量
+
+针对一个任务或者一个执行实例——local变量
+
+Global变量的命名不能重复，local可以在不同任务众重复。
+
+
+
+
+
+
+
+Activiti只负责流程控制
+
+主要靠25张表实现业务流程自动化控制
+
+为开发方便activiti提供了：*service相关api
+
+25张表中根本不会存在和业务相关的信息
+
+ 
+
+业务系统要和activiti系统进行关联
+
+关联方式:bussinessKey 业务主键存在activiti中的25张表中。
+
+业务表：id(关键) name createTime what todo 等字段
+
+Businesskey存放在act_ru_execlution表中 
+
+
+
+
+宏观流程设置下的具体细节学习案例(https://blog.csdn.net/babylovewei/article/details/84944258)
+
+bpmn组件的简单介绍，并附上详细的参考文章。
+
+Start->…?...->end
+
+1、    UserTask——用户操作的任务，可以对任务执行人进行制定(多种方式)
+
+1）、直接指定办理人——在UserTask中的Assignee中设置该办理人的名字
+
+2）、动态直接指定办理人——在UserTask中的Assignee中利用#{？？}的语法进行动态设置。
+
+3）candidate users—组任务，多个候选人。||
+
+对于候选人，有拾取任务的概念。可以设置任务负责人，当不想设置之前的人为负责任的时候需要将任务设置为空。候选人还有一个转接、交接任务的概念（将null设置为被交接的候选人）。
+
+人物的交接、归还、拾取本质上是要改变act_run_task中assignee的值
+
+ 
+
+2、 连线(SequenceFlow)——多条线时,通过设置流程变量的方式对连线的属性进行设置来进行区分可用el表达式，语法结构${expression}。
+
+El提供”.”/”[]”两种运算符来存取数据。
+
+Name：为这条连线定义一个命名
+
+Condition：配置el表达式绑定相关元素，这里一定要与实体类中的元素/或者传入的对象及数据类型保持一致。
+
+Documention：相关描述
+
+如果多条流线符合排他网关的条件，则会默认选择id小的那个流线
+
+
+
+
+3、 排他网关(exclusive gateway)
+
+3.1排他网关exclusive gateway 经常使用流程变量决定流程下一步要选择的路径
+
+3.2排他网关（也叫异或网关 XOR gateway，或者更专业的，基于数据的排他网关 exclusive data¬based gateway），用于为流程中的决策建模。
+
+3.3当执行到达这个网关时，所有出口顺序流会按照它们定义的顺序进行计算。条件计算为true的顺序流（当没有设置条件时，认为顺序流定义为true）会被选择用于继续流程。
+
+3.4用排他网关时，只会选择一条顺序流。当多条顺序 流的条件都计算为true时，其中在XML中定义的第一条（也只有这条）会被选择，用于继续流程。如果没有可选的顺序流，会抛出异常。
+
+3.5排他网关，用内部带有’X’图标的标准网关（菱形）表示，'X’图标代表异或（XOR）的含义。请注意内部没有图标的网关默认为排他网关。BPMN 2.0规范不允许在同一个流程中，混合使用带有及没有X的菱形标志
+
+3.6一个排他网关对应一个以上的顺序流
+
+ 
+
+4、并行网关——ParallelGateway（分支(fork)多个路径，也可以合并(join)多个入口路径。）
+
+一个流程中流程实例只有1个，执行对象有多个；并行网关的功能是基于进入和外出的顺序流的：
+
+4.1分支(fork):并行后的所有外出顺序流，为每一个顺序流都创建一个并发分支
+
+4.2合并(join):所有到达并行网关所有要到达ParallelGateway的分支,都要在此等待的进入分支，知道所有进入顺序流的分支都到达后，流程就会通过汇聚网关。
+
+并行网关学习：https://www.cnblogs.com/dengjiahai/p/8642421.html
+
+
+
+
+5、包含网关（被两个”0”包含业务实现）——排他网关和并行网关的结合体。但是包含网管可以选择多于一条的顺序流。
+
+包含网关只能等待被选中执行的进入顺序流，当汇聚之后，流程会穿过包含网关继续执行。
+
+
+
+
+6、Servicetask(通过服务——可以是web服务，也可以是自动化程序，来完成的任务)
+
+6.1特性：
+
+6.11、InMessage—只有一个输入消息，虽然可以有多个输入的消息流。但是对于servicetask的每一个实例，都只能有一个消息流能够设置当前的输入消息。
+
+6.12、outMessage—只能有一个输出消息，当多个输出流的时候servicetask会在完成当前实例后，将所有的输出流发出去。
+
+6.13、背景:下一个任务需要自动执行一些操作，并且这个节点不需要任何人工干涉——此节点是自动化的。当任务到了这里它会自动实现任务分发。但是要执行这个操作需要一个委托类，所以我们需要编辑一个委托类，然后把这个委托类设置到流程的监听类上面。
+
+6.14、Implementation—表示实现当前这个服务的实现技术，默认为webservice来输入消息的接受。并负责返回输出消息。
+
+6.15、输入多选一，输出全包揽
+
+6.2、对于每种具体service的具体实现（详细参考：
+
+https://blog.csdn.net/weixin_34292959/article/details/93997940?depth_1-utm_source=distribute.pc_relevant.none-task-blog-BlogCommendFromBaidu-1&utm_source=distribute.pc_relevant.none-task-blog-BlogCommendFromBaidu-1
+
+）
+
+1、三种方式
+
+Api service
+
+1）、activiti：——实现JavaDelegaet和ActivityBehavior这两个类
+
+2）、activiti：delegateExpression——也是实现JavaDelegaet、ActivityBehavior这两个类
+
+3）、activiti：expression——直接调用javabean
+
+Iimplements：
+
+1）、class type && class name
+
+ 编辑类实现javaDelegate(java委派模式)，重写execute方法，在里面完成业务及相关调用。
+
+2）、选择type为delegate expression类型，此时会出现Delegate expression，我们需要使用el表达式完成他们——el表达式中存放存储在流程中的变量或者说java对象，用来实现相应的服务。
+
+编辑委托类(实现JavaDelegaet和序列化)，重写execute方法——委托类中传入DelegateExecution作为构造参数，使用该委托执行参数的实例。完成具体业务补充。
+
+3)、使用expression并直接调用javabean。设置type为exepression，然后再expression
+
+完成el表达式——el中用流程实例execution封装javabean对象的一些内容还有一些自定义业务
+
+总的来来说第一种是直接调用委托实现类，而两种都是以一种el表达式+委托实现类(具有委托实例execution)的方式完成，最后将他们封装到map中交给activiti流程控制框架执行。这个map中el中所描述的具体信息可看作map的key，对于具体委托类的实现可看成value。
+
+
+
+
+https://me.csdn.net/Pan1458689676   --该网址对一下组件的深入理解会有很大的帮助
+
+7、StartEvent(Event type)
+
+1、普通的startevent(No Event)流程启动的初始点——initiator(可用于在流程启动时存储用户标识的变量)。Form key 和form用与指定启动的时候与相关的form表单连用。
+
+2、MessageStartEvent(消息启动事件)
+
+特性：name必须唯一不能和其他messagestartevent重名，在整个已部署的流程定义也要唯一。可通过message ref引入依赖的相关message.父子流程只能在父中存在
+
+3、errorstartevent_只能事件子流程中实现，当对应的子流程出发error信号，会被调用。
+
+4、 TimeStartEvent(定时器启动组件)
+
+特性：事件子流程不能有TimeStartEvent，一旦部署就会安排定时开启事件，当部署新版本的流程事件进程时，会删除旧的时间事件。
+
+TimeStartEvent事件下面又有几个对开始方式和时间方式设置的具体细节。
+
+
+
+
+8、EndEvent
+
+1)、 endevent正常的事件结束声明
+
+2)、 errorendevent接受有error标识的事件，能走到这个endevent必定带有error标识
+
+3)、 terminateEvent,终止/结束事件。有个BT的属性termianteAll默认为false，当设为true的时候，无论整个流程是否含有结束事件或者流程正运行在哪些部分，整个流程都会被停止
+
+BoudaryEvent(我的电脑点不开，细节在分享的连接都很清楚)
+
+IntermediateCatchingEvent(中间捕获事件)——都会有一些ref
+
+1、signal event:信号捕获事件
+
+2、message event:消息捕获事件
+
+3、定时捕获事件(会有一些关于时间的定义，以及expression用于和具体实现结合)
+
+
+
+
+9、Mailtask
+
+1)、 properties/yml文件配置邮件的具体属性，如端口号、host、从哪儿发、到哪儿账号密码。
+
+2)、 引入邮件jar
+
+3)、 流程设计中完成mailtask组件的一些配置from、to、subject。。。。。
+
+4)、 绑定执行实例，变现实现类
+
+
+
+
+10、ReceiveTask
+
+1)、 与usertask不同的是receivetask在创建之后会进入等待状态，这个状态机器自动完成。用于等待特定消息的到达。当流程执行到达接受任务时，流程状态将提交给持久性存储(可以多实例。进行异步操作)。当流程到达接受任务的时候，流程状态会保存到数据库
+
+事件监听及邮件
+
+扩展应用一些参考https://www.activiti.org/userguide/#eventDispatcher
