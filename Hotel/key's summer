@@ -1,0 +1,493 @@
+
+Key's summary 
+ 
+
+ 
+
+
+   转至元数据结尾 
+
+由 未知用户 (asnpijz)创建, 最后修改于五月 22, 2020 
+转至元数据起始 
+
+
+Part1 springcloud
+
+一、简单了解
+
+       讲SpringCloud之前讲一下什么是分布式、什么是微服务。我按顺序讲一下。
+
+1、分布式：说白了就是一群服务根据具体业务被分别部署在不同的机器上，然后发挥着各自服务的作用，各个服务是通过网络通信的方式完成调用的。官方点儿说就是，这是一种面向SOA架构的。不同服务之间是通过RPC协议或者webservice协议进行交互的。我来解释一下。
+
+SOA:是一种架构方法，也就是说面向服务的架构。 
+
+RPC:远程方法调用，他满足的协议由http、tcp、socket等，满足的协议非常多，也非常快。像阿里巴巴的dubbo就是一块基于RPC协议的实现。Dubbo的底层使用netty写的，发挥了他零拷贝的特性，做远程调用非常快。
+
+WebService：基于http协议来提供service的落地协议。
+
+2、微服务：可以理解为更细粒度的分布式实现，在分布式基础上的扩展，他的粒度更细，耦合度更低。微服务的特点就是：将整个大的服务分解成若干的服务，每个服务中间存有各自的数据库，当其中一些服务出现重大bug的时候将他关掉然后维护不影响整个服务的运行。
+
+而且单独的服务都可以进行集群来是实现高可用。   重要的是：微服务不是一门技术，他只是一种架构的设计理念，像springcloud、dubbo这些东西才是对整个微服务中间工具的具体落地。一切都是如此美好，但是由于微服务之间的调用是通过网络调用、每个服务都有自己的数据库
+
+从而衍生出来很多的问题。比如:分布式的事务问题、幂等性问题、接口超时问题等。但都会有不错的解决方案，后续我会说明。下来，我想讲讲微服务具体实现SpringCloud。
+
+
+
+
+二、SpringCloud
+
+SpringCloud包含的技术介绍
+
+Eureka、Ribbon、Hystrix、Feigh、Zuul、Config、Bus、Stream、Sleuth 
+
+Eureka部分
+
+1、Eureka（AP实现）(分布式注册中心 ———作用：服务注册和服务发现)——————but 可惜的是Eureka2和netty5一样大家都成为了框架提供者的弃子。但是也产生了很多同类替代品如console、zookeeper也可以、还有阿里巴巴的Nacos。
+
+1.1、介绍：Eureka可以说是SpringCloud下的最为核心的模块之一，因为所有的服务都要注册到Eureka由他管理，不同服务之间的网络调用都是要先经过eureaka，找到被调用服务的服务信息，最后才进行RPC远程调用。
+
+1.2、Eureka组成：Eureka-Server(服务注册中心)、Eureka-client(服务客户端，客户端分为提供者和消费者)， 每个Euerka注册中心和客户端都要有自己的IP.
+
+服务注册：服务注册中心，每个eureka-client都会向注册中心注册自己的清单(IP、端口号、服务名称、网络协议)。Eureka-Server和每一个Eureka-Client都可以做继承，然后根据轮询算法/之类的进行服务之间的调用，降低了服务器压力，提高了安全性能。
+
+服务发现：服务与服务之间的调用不能通过确定性的具体服务地址来调用。所以Eureka-Client在进行服务见调用的时候会向Eureka-Server发送请求，与此同时他会获得服务注册中心所反馈的服务实例清单(这份清单可以通过设置进行最近刷新)，当获得服务清单的时候，发起调用请求的Eureka-client会根据清单找到被调用服务的服务名称通过服务名称进行调用。服务端是通过心跳机制来查看注册在它上面的客户端是否运行正常，心跳的时间默认为30s。
+
+访问查看：我们通过访问Eureka-Server自己提供的应用IP地址就可以查看到所有注册在它上面的服务状态。这是一个可视化的工具，我们可以在这个页面上所显示的各种参数，联想到Eureka真正关注的一些东西，然后有针对性的学习。
+
+Eureka服务端——服务注册中心。支持高可用配置方案，他依托于强一致性提供了良好的服务实例可用性。Eureka的高可用的性能也非常好————当Eureka在集群的环境中，有个别分片出现了故障的话，Eureka会自动进入自我保护机制。当Eureka集群的故障分片进入自我保护的时候，允许他们继续提供服务的发现和注册，直至修复好后与其他分片进行同步。
+
+Eureka客户端——负责处理服务的注册和发现。Eureka客户端会在application运行过程中向Eureka-Server注册自己并且利用周期性的心跳机制来维护更新和服务端的租约。
+
+
+
+
+2、相关的注解及配置
+
+2.1、服务注册中心相关注意
+
+用到微服务的话，必然会和高可用挂钩，这是不可避免。要清楚一个前提。每一个服务端（包括服务注册中心），都需要进行集群。每一个服务的提供者同时也是消费者，与此同时，每一个消费者也是提供者。
+
+按版本导入依赖，2.0以下是服务端和客户端的依赖是分开的。2.0以上是合并的
+
+@EnableEurekaServer——只使用一次且在springboot项目的启动类中标注。
+
+配置中心
+
+server-port：微服务中各个服务的端口是必须是唯一的，所以再设置的时候也很有技巧的设计 比如我的服务注册中心集群分别9001、9002；服务提供者集群为8010、8011；消费者集群为8020、8021这样的话，可以有效的通过限定判断具体是哪一类服务及他的集群
+
+spring.application.name=service-provide ：————当前服务名=service-provide
+eureka.instance.hostname=localhost ：————当前服务注册中心的主机名
+eureka.client.register-with-eureka=true/false ：————是否将自己进行注册，当注册中心为单机的时候设置为false，表示不注册。当对eureka-server进行集群实现高可用的时候开启为true。
+eureka.client.fetch-registry=true/false :——————是否需要检索服务，这个看当前的应用的身份而定。如果是服务端单机则，不需要开启为false，因为服务端的职责是维护服务实例，所以检索服务不应该是他的责任。但是为了高可用即便是服务端也需要开启检查服务。
+
+2.2、Euerka-Client（搭建服务提供者客户端并且注册到Euerka-Server中）
+@EableDiscoveryClient ————同注册中心，目的是激活Euerka中的DiscoveryClient实现自动化配置，找到注册中心，将自己注册进去。
+配置中心和注册中心的差不多。
+构建服务提供者和服务消费者，这两个都要注册到服务注册中心中去。服务的消费者可以通过Ribbon(本地负载均衡)或者feign的方式消费服务提供者。但实际情况是Ribbon很少使用因为Ribbon采用的是RestTemplate的实现方式，还需要再服务中编写http地址非常麻烦，
+但是feign是对Ribbon的一个很大的进化，fegin依赖与Eureka和Hystrix，所以feign的功能很强大。
+
+
+3、Summary(分三个角度阐述他们的作用)
+3.1、服务注册中心
+1)、失效服务剔除：在Eureka Server注册的服务中，总会有一些服务因为各种原因造成不能正常工作。Eureka会利用定时任务，每个一段时间(调用时间)对当前清单中超时的(超时时间)进行服务剔除。其中调用时间和超时时间都需要配置，当然他们也有自己的默认时间60&90s。
+2）、自我保护：Eureka Server在运行期间会通过心跳机制与各种注册在他上面的客户端进行交流，心跳机制的作用是将实例的注册信息尽可能的保护起来。如果被保护的实例真的挂了，就会引入容灾机制——使用Hystrix进行服务降级。
+3.2、服务提供者
+1）、服务注册:服务提供者在启动的时候发出REST方式的请求将自己注册到Eureka Server中去，并且会将自己的一部分元数据也带过去，因为这些元数据Eureka Server才能对该实例进行管理，相关的服务消费者才可以通过这个服务提供者在服务清单上所呈现的元数据进行消费。
+2）、服务同步：发生在集群条件下。多个注册中心、多个服务提供者、多个服务消费者。服务同步指的是：当服务提供者将自己注册到了一个Euerka Server服务注册中心集群的某个分片的时候，其他的注册中心也会进行与提供者的数据同步。因此，无论访问哪一个注册中心，都可以找到该实例的信息。
+3）、服务续约：服务提供者会发送一个心跳告诉Eureka Server注册中心，，他还活着，目的是防止被Euerka Server的“失效任务剔除机制”给剔除掉。
+3.3、服务消费者
+1）、获取服务：eureka.client.fetch-registry=true 之前的检索服务设置为true，那样的话服务消费者就会自动的去Euerka Server服务注册中去获取服务清单来进行消费。
+ 2）、服务调用：服务的消费者通过从注册中心获取的目标提供者的服务名、Zone等信息进行调用。如采用Ribbon的Rest形式调用和采用Fegin形式的伪RPC调用。
+3)、服务下线：当客户端关闭的时候，会发送一个Rest形式得请求给Eureka Server服务注册中心，告诉他我要下课了。这样的话，服务段就会将该实例设为DOWN。
+
+
+1、Ribbon——Ribbon的话我简单介绍一下，因为用的不多。
+1.1、Ribbon的作用
+
+1.11、客户端负载均衡：其实Ribbon和Ngnix挺像的。Ribbon负责本地客户端负载均衡，而Ngnix负责的是服务端的负载均衡，严格来说Ngnix是通过软件来完成服务端的负载均衡，但是Ribbon只是通过轮询算法完成的。使用负载均衡的目的很清楚，主要作用就是减少服务端的压力，
+
+实现高性能。
+
+1.12、之前我讲到Ribbon用到多的是RestTemplate，说实话RestTemplate的模板方法说白了就是给你提供一个相对简单的编码完成RESTFUL风格的远程调用。和常用的Rest风格调用有些相似：POST/PUT/GET/DELETE。但具体情况下：post和get比较类似；delete和put比较类似
+
+POST请求：1、postForEntity<T>函数，当调用后会返回ResponseEntity对象,T为响应的body类型；  2、postForObject函数：他简化了postForEntity函数的后续处理，他将响应的body封装为对象来返回使用。————只能说他们是适用于不同的响应内容的的具体使用吧
+
+         3、postForLocation函数：该函数返回的是新资源的URI。   entity、object、location的本质实现底层都很类似不同点在于他们的响应类型。
+
+GET请求：getForEntity和postForEntity类似；getForObject和postForObject类似。
+
+
+
+
+PUT请求：PUT请求和DELETE请求没有和GET/POST一样引入For...的形式。他们的使用方式如：new RestTemplate(); 用新创建的restTemplate.put()方法完成，只不过put方法中重载的方法有所不同，只是针对具体业务做相关改动而已。
+DELETE请求：和PUT思想一样。
+RestTemplate为什么会起这些作用，其中的原因和负载均衡器LoadBalance有关，他对RestTemplate做了相关拦截方面的限制。
+还有就是完成负载均衡的几种算法我也不提了，这些都研究过，感觉不用Ribbon的没有什么用。他们是RoundRobinRule、RetryRule、WeightedResponseTimeRule、Weights权重计算。
+
+1、Hystrix————熔断器，这个比较重要我会多描述一下。
+
+熔断器：顾名思义，他和我们电表里面的保险丝差不多，只不过表现的形式不一样而已。保险丝会断电路在某个热点，发生熔断进而保护家里电路及机器。微服务环境下，熔断器会在与Eureka的配合下对服务进行监控，当某些服务发生了超出标准的问题的时候，会进行熔断、降级动作。
+
+Hystrix是一个用于隔离访问远程系统、服务或者第三方库，防止级联失败，从而提升系统的可用性、容错性与局部应用的弹性，是一个实现了超时机制和断路器模式的工具类库。
+
+
+
+
+1、断路器设计方面关注
+
+1.1、依赖隔离
+
+Hystrix采用舱壁模式的设计理念——借用轮船将仓储设置成为n多个单独个独立仓储的概念。这样的话，即便某些仓库出现问题其他的仓库也不受影响。同理，Hystrix也依据这一原理实现了线程池间的隔离。为每一个依赖服务设计一个独立的线程池。这样的话，解决了线程之间持续占用资源的问题。就算有的服务出现了问题，也不会影响其他服务的正常使用。采用线程隔离会产生诸多好处，有兴趣的可以查，而且实践中检验，在不同的服务中加入线程池对整个服务的性能损耗来说是可以容忍的。
+
+
+
+
+2、工作流程(当实际中遇到问题需要实际关注的点)
+
+2.1、创建HystrixCommmand对象或者HystrixOvservableCommand用来表示对依赖服务的操作请求，同时传递所有的参数。。————显而易见command这里采用了命令模式
+
+HystrixCommand:用在依赖的服务返回单个操作结果的时候。
+
+HystrixObservableCommand：用在依赖返回多个操作结果。
+
+该命令模式中牵扯模式—>客户端调用者利用抽象命令完成要求接收者完成具体的业务逻辑。 ----也就是调用者invoker与接收者receiver之间通过command命令接口实现解耦，满足依赖倒置的实现。对于调用者，我们可以为其注入多个命令操作，调用者只需要在需要的时候通过抽象层调用即可。
+
+                                    Receiver：接收者——用于处理具体的业务逻辑。 
+
+                                    Command：抽象命令——定义一个命令对象应该具备的一系列命令条件
+
+                                    ConcreteCommand:具体的命令实现，它绑定了命令操作与接收者之间的关系。
+
+                                    invoker：调用者，可以在需要的时候通过命令对象完成具体业务逻辑
+
+基于invoker————receiver（请求-效应的模式）——————>做记录日志、撤销操作、队列请求比较合适。
+
+2.2、命令执行：同步(execute)异步执行(queue)
+
+2.3、结果是否被缓存检测
+
+2.4、断路器是否被打开
+
+2.5、线程池/请求队列/信号量是否被占满
+
+2.6、计算路由器的健康度
+
+2.7、命令执行失败的fallback处理
+
+2.8、返回成功的响应
+
+2.9、服务降级——达到熔断点，即当信号量达到上限。就会触发熔断，进行服务降级。
+
+
+
+
+fegin———声明式的服务调用组件。消费者每次调用提供者的时候，总是通过Eureka Server的服务清单获取到提供者的元数据，通过调用服务提供者中的fegin客户端进行消费行为，这个行为是一个伪rpc调用。
+
+fegin充分发挥继承的特性：Spring Cloud对Feign进行了增强，使Feign支持了Spring MVC注解
+
+fegin整合了ribbon和hystrix。所以fegin具备了负载均衡、服务熔断降级、回掉等特性。所以引入fegin的依赖的同时也会自动引入Riibbon和Hystrix的特性。所以在application.xml文件中就可以做一些Hystrix和Ribbon全局综合的配置。
+
+fegin主要采用的是基于接口的注解。
+
+fegin的使用？
+
+1、在服务启动类中添加@EnableFeignClients
+
+2、在application.xml文件做熔断器、负载均衡相关的配置
+
+3、在相关接口上声明一个@FeginClient(name="", fallback="")，name指定的是被调用的服务，fallback指定的是当通过fegin客户端调用服务提供者调用失败的时候应该执行的方法，这是对hystrix的整合效果。在服务某些服务出现问题的时候，给用户相关反馈。
+
+4、配置并解决Fegin和Ribbon的冲突问题——重试机制会发生冲突。
+
+5、微服务调用中Feign代理的HTTP客户端通信，可以在fegin中做相关的访问权限、访问拦截的设置。
+
+6、fegin的超时设置——配置文件中
+
+7、fegin编码器和解码器的使用
+
+
+
+
+zuul——API服务网关
+
+zuul在整个微服务中起到一个门面的作用。所有的外部客户端的访问都要通过API网关来进行调度和过滤。另外zuul网关还在动态路由、安全管理、监控和弹性等方面。zuul和ngnix一样都做着路由转发、认证校验等工作，不同的是语言构成不同、针对的环境不同
+
+zuul作用于整个微服务中，但是ngnix作用于web服务
+
+具体
+
+zuul网关的具体步骤
+
+1、构建api网关——导入zuul依赖。zuul依赖中包含了hystrix、ribbon、actuator等依赖。使用@EnableZuulProxy注解作用于启动类上。配置applcation.xml配置文件
+
+2、请求路由——zuul是一种面向服务的请求路由。在微服务中，zuul可以和eureka实现无缝整合，它可以利用通过eureka实力清单的服务实例来进行动态路由——zuul & eureka的搭配使用的作用：把具体的url交给eureka的服务发现机制去自动维护。隐藏了传统意义上的url&path实现路由的复杂性。在applcation.xml文件中的具体的配置以zuul.routes.*的形式来设置路由规则，或者说是路由对象。
+
+3、请求过滤——因为zuul是一个大门，大门不是谁都可以进的，所以我们可以在zuul上面实现拦截过滤动作并且zull提供非常简易的api——ZuulFilter 我们只需要通过继承ZuulFilter，以及根据自己的业务重写四个有关过滤格式的方法就可以完成请求过滤的coding。怎么说他这样做大大的减少了，像单体架构那样不同的控制层进行访问需要进行安全校验等非常冗余的问题。因为他的设计理念就是让认证前移，将过滤、拦截、认证等动作前移到API网关。我们在使用ZuulFilter过滤器的时候只需要完成：filterType、filterOrder、shouldFilter、run等方法的重写就可以完成任务，当然深入研究的话还有很多。
+
+4、动态加载：很多时候项目在服务器上是不能说想关闭维护就关闭维护的，所以就需要进行服务端的维护，这样的话动态加载就成为了一个不可避免的话题。zuul是整个微服务架构的大门，他不想其他里面的某些服务挂了以后将他关闭进行维护。一旦大门关闭，所有的用户请求都将进不来，严重的话会造成极大的损失。———>zuul提供了很多动态加载的功能。如，动态修改路由规则、动态添加/删除过滤器等。
+
+
+
+
+SpringCloud gateway是springcloud出的一款替换zuul的产品，他们的关系就像权限认证框架shiro和spring secuerity的关系很相似。springcloud官方推荐gateway——我想大概的原因是亲儿子的缘故吧。
+
+zuul 1.x的版本底层使用的是基于bio模型的api架构，相比与可以实现异步、nio的gateway来说在网络通信方面没有太大优势。但是zuul还是非常灵活的，很多时候灵活总是难能可贵的。
+
+zuul 2.x底层架构使用了nio，性能得到了很大的突破，但是很遗憾springcloud并没有集成他。
+
+所以总的来说，如果springboot使用1.x版本我会使用zuul；springboot是2.x版本我会使用gateway。
+
+
+
+
+SpringCloud Config ——分布式配置中心
+
+springcloud  config是一个独立的微服务。它的作用是为我们的分布式微服务项目提供一种的外部化的配置支持，个人感觉对于小型的微服务项目是一个相对鸡肋的技术。该分布式配置中心在配置好后会连接远程git仓库并为客户端提供配置 信息，加密/解密信息等。我们可以将自己的配置文件至于github、gitee等开源网站上进行管理。因为他的主要对象就是配置文件和远程git，所以该分布式配置中心天然的就具有一种与生俱来的版本控制的气质。
+
+分布式配置中心存在的意义：
+
+轻量级：相比于整个服务它是一种轻量级部署的实现，而且使用起来很简单。
+
+作用强：分布式配置中心可以完成在不用重启服务的前提下，对我们分布式服务的配置信息进行动态的修改。
+
+扩展：springcloud config相比于国产的携程apollo和阿里巴巴nacos来说并不好用。后面提供可视化的配置界面，操作更加简单。
+
+
+
+
+
+
+
+==============================================================================================================================================================================================
+
+
+
+
+Part2 activiti框架
+
+1、什么是工作流？  ————我的activiti代码在 附件中
+
+官网文档：https://www.activiti.org/userguide/#eventDispatcher
+
+书籍：activiti26连载(查看作者发布空间)：https://my.oschina.net/JavaLaw/blog/1542434
+
+工作流：工作的流程,他的作用是将工作中的具体业务流程化。也就是说，将一套有相关性的业务的开始到结束的整个流程交给工作流框架管理，实现自动化。
+
+
+
+环境：jdk7以上、springboot1.x+activiti6.x、springboot2.x+activiti7.x
+
+因为activiti6.x出来的时候springboot2.x还没有出来，所以后边强行集成的话会出很多问题。
+
+以springboot1.x+activiti6.x为例
+
+插件：esclipse：activiti designer             idea：actiBPM
+
+
+
+
+2、核心api
+
+3、activiti会帮我们生成一系列固定的数据库表，这些数据库表和我们的具体业务无关，只需在启动实例的时候将业务信息与自动生成的activiti表绑定就可以。实际情况中如果出现问题，第一反应就是查看系统提供的这些表。
+
+
+
+
+
+
+序号 表名 说明 
+1 act_ge_bytearray 二进制数据表 
+2 act_ge_property 属性数据表存储整个流程引擎级别的数据,初始化表结构时，会默认插入三条记录 
+3 act_hi_actinst 历史节点表 
+4 act_hi_attachment 历史附件表 
+5 act_hi_comment 历史意见表 
+6 act_hi_identitylink 历史流程人员表 
+7 act_hi_detail 历史详情表，提供历史变量的查询 
+8 act_hi_procinst 历史流程实例表 
+9 act_hi_taskinst 历史任务实例表 
+10 act_hi_varinst 历史变量表 
+11 act_id_group 用户组信息表 
+12 act_id_info 用户扩展信息表 
+13 act_id_membership 用户与用户组对应信息表 
+14 act_id_user 用户信息表 
+15 act_re_deployment 部署信息表 
+16 act_re_model 流程设计模型部署表 
+17 act_re_procdef 流程定义数据表 
+18 act_ru_event_subscr 运行时流程事件表 
+19 act_ru_execution 运行时流程执行实例表 
+20 act_ru_identitylink 运行时流程人员表，主要存储任务节点与参与者的相关信息 
+21 act_ru_job 运行时定时任务数据表 
+22 act_ru_task 运行时任务节点表 
+23 act_ru_variable 运行时流程变量数据表 
+
+表类型的总结
+
+1、act_re*: re表示repository(存储表 RepositoryService)。实现RepositoryService接口操作的表。  以re为前缀的表包含了静态信息：常用于流程定义、流程资源等
+
+2、act_ru*:ru代表runtime(运行时表 RuntimeService)。 实现RuntimeService接口操作的一般用于：存储用户任务、用户变量、用户职责等运行时的数据。但是当流程实例结束的时候，activiti会删除这些运行时的数据。
+
+3、act_id*:id表示identity(组织机构表 IdentityService)。实现IdentityService接口操作 的表。一般用于用户记录、在实力流程中使用到的用户和组。
+
+4、act_hi*:hi表示history(历史表 HistoryService)。 实现HistoryService接口操作的表。一般用于保存流程实例执行有关历史操作方面的相关数据。
+
+5、act_ge*:ge表示general(全局表 )。各种情况都使用的数据。
+
+
+
+
+activiti工作流框架规范
+
+1、核心API 
+
+ProcessEngineConfiguration:流程引擎配
+actiworkflow.7z置。
+
+ProcessEngine:流程引擎
+
+核心七大接口
+
+RepositoryService：提供一系列管理流程部署和流程定义的API。
+
+RuntimeService：在流程运行时对流程实例进行管理与控制。
+
+TaskService：对流程任务进行管理，例如任务提醒、任务完成和创建任务等。
+
+IdentityService：提供对流程角色数据进行管理的API，这些角色数据包括用户组、用户及它们之间的关系。
+
+ManagementService：提供对流程引擎进行管理和维护的服务，提供对activiti数据库的直接访问【一般不用】
+
+HistoryService：对流程的历史数据进行操作，包括查询、删除这些历史数据。FormService：表单服务
+
+
+
+
+大致步骤：
+
+1、    设计流程，即完成流程图(将流程图放入到resource下的processes文件夹下，没有的新建一个)
+
+2、    配置流程引擎(在yml中配置activiti数据源及规则)、
+
+3、    加载流程文件(应用启动时加载流程配置文件，启动后会自动生成28张表)
+
+4、    流程部署——【RepositoryService(核心API)】(原生spring会根据加载procees下文件并且开启ProcessEngine。Springboot下会自动加载)
+
+
+
+
+5、    启动流程(【RuntimeService(核心API)】根据xml文件中的process id启动流程)
+
+6、    查询当前任务【TaskService】根据taskid查询相关的流程任务状况。Taskid是变化的,没完成一级操作，taskid都会变动一次。
+
+7、    结束当前任务【taskservie.complete(taskid)】流程结束后。
+
+
+
+
+
+
+
+
+
+
+springboot项目中，完成以来导入，一些简单的配置后就会生成具体的类似上述表格中的表
+
+例如(只是举个例子)：
+
+1）、依赖 pom.xml
+<dependency>
+    <groupId>org.activiti</groupId>
+    <artifactId>activiti-engine</artifactId>
+    <version>6.0.0</version>
+</dependency>
+
+<dependency>
+    <groupId>org.activiti</groupId>
+    <artifactId>activiti-spring-boot-starter-basic</artifactId>
+    <version>6.0.0</version>
+</dependency>
+
+2）、配置信息 application.yml（配置信息里面会牵扯到一些表是否能生成，具体需要自己查）
+activiti:
+  check-process-definitions: true #检查Activiti数据表是否存在及版本号是否匹配默认为true,设为false后会取消自动部署
+  database-schema-update: true  #在流程引擎启动和关闭时处理数据库模式。有true、false、create-drop、drop-create四种模式
+  history-level: full #数据保留级别。none、activity、audio、full——保留级别递增
+  process-definition-location-prefix: classpath:/processes/ #在启动项目的时候可以通过该配置扫描到自己设置的.bpmn/.xml文件
+数据库相关配置
+3）、启动项目，可以进入数据查询到工作流引擎帮忙生成的表
+
+
+
+
+
+以上的这些都是activiti工作流框架及spring帮我们完成的。接下来着重介绍activiti工作流框架的学习方式。
+
+
+
+
+1、首先需要看看activiti框架在idea中为我们提供的actiBPMN插件都有些什么。
+
+ 还有连线
+
+如上图，这个是activiti在idea中的activiti插件所提供给我们的工具。我们只需要重点关注途中标注的部分就可以了。
+
+actiBPMN插件只是给我们提供了一种工具，我们可以通过该工具完成流程业务绘制。但是实质上，我们绘制的.bpmn格式的文件它的实质是.xml文件，只不过 插件帮我们封装了。
+
+
+
+
+比如我绘制了一幅流程图（这个流程图中不包含任何业务逻辑）——————排他网关(x)后需要通过类似的el表达式，描述进行逻辑判断。
+
+
+
+但是，他实质上是(只需要将.bpmn后缀改为.xml后缀即可)
+
+
+
+
+
+
+重点
+
+以下的连接是对流程图中的具体组件的解释
+
+
+
+
+1、基本组件的综合概述(主要关注任务的设置和定义)：https://www.jianshu.com/p/e25fdc595f86  
+
+每一种任务都有很多种形式。在这一部分的核心关注点：usertask、servicetask
+
+UserTask相关
+
+
+
+
+
+
+ServiceTask
+
+
+
+
+
+
+usertask一般用于一些OA审批业务，例如你申请一个东西，这个东西获得的过程需要很多的流程，中间需要很多审批人处理。审批人对应的就是usertask，这里需要手动将任务提交才能完成当前任务节点然后走接下来的流程。对于使用usertask的流程节点来说，需要
+
+我提供代码的controller中的方法：taskService.complete() 来完成当前任务提交。
+
+servicetask一般用于一种自动化的流程处理。即，这个没有必要存在 必要的人为审批。——当任务到达该节点，servicetask会自动化的进行相关的业务处理。他的实现主要依赖于委托类的实现，即JavaDelegate。在这里我们只需要，编写一个servicetask的委托实现类
+
+然后重写里面的execute方法，帮他完成执行。这样的话，当流程执行到这个servicetask的时候就会去自动执行该委托实现类的方法。
+
+
+
+
+2、主要是 对事件的描述(开始事件、边界事件、抛出事件、捕获事件、结束事件)： https://blog.csdn.net/sinosoft12345/article/details/81199907
+
+
+
+对于事件的话————玩法都一样。不论是开始事件、边界事件、亦或是结束事件。她都是先定义事件类型Event Type、有必要的话完成执行监听Execution Listener之类的。那Timer Event来说，他可以声明为Timer Event/Message Event。。。
+
+那Timer Event来说你定义好一个时间比如当前时间的两分钟后，那么当到了设置好的时间后，流程实例就会自动启动。  同理，Message Event也是一样，不过他是通过消息来触发事件的只不过Timer Event是通过时间来触发事件的。
+
+对于messgae-gateway来说我建议使用 Message Event。
