@@ -1,0 +1,320 @@
+
+myabtis 
+ 
+
+ 
+
+
+   转至元数据结尾 
+
+由 未知用户 (asnpijz)创建, 最后修改于四月 07, 2020 
+转至元数据起始 
+
+
+框架及对应区域简介
+
+接口层(session)
+
+                    
+
+（1）API接口层：提供给外部使用的接口API，开发人员通过这些本地API来操作数据库。接口层一接收到调用请求就会调用数据处理层来完成具体的数据处理
+
+ 
+
+核心处理层(all)
+
+
+
+（2）数据处理层：负责具体的SQL查找、SQL解析、SQL执行和执行结果处理等。它主要的目的是根据调用的请求来完成一次数据库操作。
+
+ 
+
+基础支持
+
+
+
+（3）基础支撑层：负责最基础的功能支撑，包括连接管理、事务管理、配置加载和缓存处理，这些都是共用的东西，将他们抽取出来作为最基础的组件。为上层数据处理层提供最基础的支撑。
+
+
+
+
+运行原理步骤
+
+
+
+
+
+
+ 
+
+ 
+
+            Session层（API信息层）
+
+1） 读取 MyBatis 配置文件：mybatis-config.xml 为 MyBatis 的全局配置文件，配置了 MyBatis 全局环境如其他mapper.xml信息、数据库持久层信息等。
+
+2）加载mapper.xml配置文件。根据myabtis-config.xml的配置找到mapper.xml配置地址并完成加载。
+
+Summary：
+
+1）、2）属于初始化工作，本质是创建Configuration对象，将解析的xml数据封装到Configuration内部的属性中。
+
+
+3）构造会话工厂：通过 MyBatis 的环境等配置信息构建会话工厂 SqlSessionFactory，通过SqlSessionFactory的build方法将解析的配置文件。
+public SqlSessionFactory build(Configuration config) { 
+    return new DefaultSqlSessionFactory(config); 
+}
+
+ 
+
+4）创建会话对象：由会话工厂创建 SqlSession 对象，该对象中包含了执行 SQL 语句的所有方法。
+
+调用SqlSessionFactoryBuilder的opensession方法,获得SqlSession(接口)对象实质是new一个DefaultSqlSession实例；
+
+SqlSession是一mybatis用于和数据库交互的顶层类，通常与ThreadLocal绑定，一个会话使用一个SqlSession，并且在使用完毕后关闭close；
+
+
+
+           
+
+核心处理层
+5）Executor 执行器：MyBatis 底层定义了一个 Executor 接口来操作数据库，它将根据 SqlSession 传递的参数动态地生成需要执行的 SQL 语句，同时负责查询缓存的维护，也就是说SqlSession为缓存级别默认为读缓存。
+6）MappedStatement 对象：在 Executor 接口的执行方法中有一个 MappedStatement 类型的参数，该参数是对映射信息的封装，用于存储要映射的 SQL 语句的 id、参数等信息。
+
+7）输入参数映射：输入参数类型可以是 Map、List 等集合类型，也可以是基本数据类型和 POJO 类型。输入参数映射过程类似于 JDBC 对 preparedStatement 对象设置参数的过程。
+
+8）输出结果映射：输出结果类型可以是 Map、 List 等集合类型，也可以是基本数据类型和 POJO 类型。输出结果映射过程类似于 JDBC 对结果集的解析过程。
+
+Configuration中Mappedments下。意义：当解析到mappers标签时，他可以判断解析到的mapper配置文件。并且他会将该mapper配置文件对应的增删查改<select>…封装到mapperStatement对象然后将该对象放到mapperStatements中去。
+
+
+
+
+
+
+Executor执行器的方法()用来执行处理这一套增删改查的操作（***Executor会收到mappenStatement、parameter、rowbouds等等）
+
+
+
+ 
+
+ 
+
+Transaction
+
+JDBCTemplate :会根据是否Connection为前提进行逻辑判断，来判断提交、自动提交|回滚、关闭等（Connection DataSource TransactionIsolationLevel[NONE(0)  READ_COMMITED(2)  READ_UNCOMMITED(1)  REPEATABLE_READ(4)  SERIALIZABLE(8)] autoCommit）
+
+ManagedTransaction：不依赖于连接，没有自动提交
+
+ 
+
+ 
+
+使用 properties 文件是比较普遍的方法，一方面这个文件十分简单，其逻辑就是键值对应，我们可以配置多个键值放在一个 properties 文件中，也可以把多个键值放到多个 properties 文件中，这些都是允许的，它方便日后维护和修改。
+
+settings 的配置项很多，但是真正用到的不会太多，我们把常用的配置项研究清楚就可以了，比如关于缓存的 cacheEnabled，关于级联的 lazyLoadingEnabled 和 aggressiveLazy Loading，关于自动映射的 autoMappingBehavior 和 mapUnderscoreToCamelCase，关于执行器类型的 defaultExecutorType 等。
+
+ 
+
+在 typeHandler 中，分为 jdbcType 和 javaType，其中 jdbcType 用于定义数据库类型，而 javaType 用于定义 Java 类型，那么 typeHandler 的作用就是承担 jdbcType 和 javaType 之间的相互转换。
+
+ 
+
+environments大部分情况下会采用 Spring 对数据源和数据库的事务进行管理，这些我们教程后面都会进行讲解。本节我们会探讨 MyBatis 自身实现的类。TransactionManager它主要的工作就是提交（commit）、回滚（rollback）和关闭（close）数据库的事务
+
+environment 的主要作用是配置数据库在 。MyBatis 中，数据库通过 PooledDataSource Factory、UnpooledDataSourceFactory 和 JndiDataSourceFactory 三个工厂类来提供，前两者对应产生 PooledDataSource、UnpooledDataSource 类对象，而 JndiDataSourceFactory 则会根据 JNDI 的信息拿到外部容器实现的数据库连接对象。
+
+ 
+
+
+
+
+ 
+
+结果映射
+
+https://mybatis.org/mybatis-3/zh/sqlmap-xml.html
+
+
+
+
+
+
+
+
+具体使用(mybatis/spring+myabtis/springboot+mybatis)
+
+ 
+
+关联——嵌套select查询(将其他select标签 resultMap的结果利用assocation关联到我们的resultMap中,做我们的结果集)
+
+
+
+
+ 
+
+ 
+
+http://c.biancheng.net/view/4322.html
+
+复合标签
+
+If
+
+
+
+
+
+
+
+
+where 元素只会在至少有一个子元素的条件返回 SQL 子句的情况下才去插入“WHERE”子句。而且，若语句的开头为“AND”或“OR”，where 元素也会将它们去除。自定义where需要借助trim实现
+
+
+
+
+
+
+<trim> 元素的主要功能是可以在自己包含的内容前加上某些前缀，也可以在其后加上某些后缀，与之对应的属性是 prefix 和 suffix
+
+ 
+
+ 
+
+Foreach
+
+
+
+
+ 
+
+ 
+
+ 
+
+一些步骤和细节
+
+一、 Myabtis开发具体步骤
+
+1、 引入mybatis依赖
+
+2、 创建myabtis配置文件(对myabtis进行全局配置,如数据源、事务、mapper文件的配置)
+
+3、 创建mapper xml文件(整理相关表的所有sql)
+
+4、 创建mapper接口(与mapper.xml建立映射关系)
+
+5、 利用SqlSession对象通过mapper接口对database进行操作(SqlSession接口还可以sql执行、提交事务、关闭连接等)
+
+6、 在mapper.xml完成sql的书写和配置,并制定好参数、结果集、返回类型等
+
+7、 在服务层/控制层完成拦截调用,处理数据等
+
+ 
+
+二、 Mapper.xml配置详解
+
+id：是这个操作的一个标识，一会通过mybatis执行操作的时候会通过这个namespace和id引用到这个insert操作
+
+parameterType：用来指定这个insert操作接受的参数的类型(实体/map/list类型的java对象)
+
+多种对应关系的时候掌握assocation和collection的用法来掌握结果map：一对多assocation用在多的一方,collection用在一的一方
+
+1.获取SqlSession对象：通过该sqlSessionFactory.openSession方法获取SqlSession对象
+2.对db进行操作：使用SqlSession对象进行db操作
+3.关闭SqlSession对象：sqlSession.close();
+
+4.Mapper接口的完整类名必须和对应的Mapper xml中的namespace的值一致
+
+5.Mapper接口中方法的名称需要和Mapper xml中具体操作的id值一致
+
+6.Mapper接口中方法的参数、返回值可以不和Mapper xml中的一致
+
+7.多参数mybatis的处理---将多个参数封装到一个map，java通过反射获取方法的参数名称(对参数名和顺序及环境有很强的依赖性,容易导致一些错误)；最好自己去指定参数的名称,通过@param(“参数名称”),来给参数来指定名称
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+易错细节
+
+1、Myabtis动态解析及#{}和${}的区别？
+
+Myabtis在对sql语句进行预编译之前，会对sql进行动态解析，解析为BoundSql对象（在此过程对sql进行解析）
+
+动态解析：https://www.cnblogs.com/fangjian0423/p/mybaits-dynamic-sql-analysis.html
+
+ 
+
+ 
+
+#{}与${}例子：
+
+
+
+
+在动态解析SQL阶段的不同表现
+
+#{}:  select * from user where name =?;
+
+${}:  select * from user where name = “${name}” 
+
+Summary:
+
+在编译之前#{}是个变量，而${}已经不是一个变量了，他已经完全是数据本身了。
+
+                #{}方式可以防止依赖注入，${}方式不可以。
+
+                ${}对象一般用于传入数据库对象，如传入表名。当执行的sql语句不希望让变量进行赋  值，则可以使用${}进行处理。
+
+当使用mybatis的实体类属性和数据库表中的字段不一致时要用实体中的属性作为传入的值(sql编译)
+
+ 
+
+ 
+
+2、Date类型与时间戳TimeStamp的区别与使用（JDBCTYPE=DATE与JDBCTYPE=TIMESTAMP）
+
+JDBCTYPE=DATE返回的时间格式是yyyy-MM-dd;
+
+JDBCTYPE=TIMESTAMP返回的时间格式 yyyy-MM-dd HH:mm:ss
+
+如果在计算时间的时候运用不当计算出来的时间就会完全错误
+
+3、mysql数据库没有booelean类型(但可以使用tinyint类型来代替.该类型数据值为0或1),但是如果通过sql取出来的话,返回结果为0会转化为false、1会转化为true
+
+解决方案:
+
+1、 使用ifnull(column,0)函数来处理tinyint类型字段
+
+2、 在jdbcUrl添加参数:tinyIntlisBit=false(默认为true)
+
+3、 在tinyint字段的值中进行*1操作，即可得到原值
+
+         Mybatis与数据库进行交互传输确实会有一些数据类型返回值上的差异,人工在数据库中或者在参数传来的service或者controller层对传入的参数进行校验或者转化。注意运用数据类型的普通类型与包装类型的区别,要掌握这些区别的细节,针对特定的业务细节进行校验,规避bug。
+
+ 
+
+4、重载多参数的使用(禁止在mapper中使用重载)  binding包下有具体逻辑
+
+原理:myabtis动态代理使用的投鞭断流法实际上是把以map<method,mappermethod>的形式存储接口方法名与xml中对应的sql。在投鞭断流时myabtis使用package+mapper+method组合的string作为key,通过该key去xml中寻找相对应的sql来执行。同一个map不能key相同,mapper.xml文件会有id唯一性的要求。假设通过重载的接口来访问xml,xml文件通过映射发现有多个id,mybatis就会傻的。
+
+解决方案：
+
+                前置重载方法,将重载方法提前至service等逻辑层处理或者进行相关校验。
+
+https://cloud.tencent.com/developer/article/1340880
+
+5、尽量少的使用if choose等语句,编译优化在mybatis中算是比较麻烦的过程了。if choose用起来确实很爽(我没用过)，但是了解mybatis编译优化的都知道,这个编译其实功能没有那么强大,很多时候书写不规范可能会引起编译后的sql有点问题。而且编译优化也会耗费到很多性能(数据量大的时候确实有影响)。尽量使用原生的sql来处理动态的问题(mybatis很多辅助库功能还不是那么强大,所以不要过度依赖myabtis,把他当作sql配置文件使用)。
+
+ 
+
+6、mybatis大量数据批量插入
+
+                换一种执行方式executor三种方式simple 不适合使用的时候考虑使用batch rensue
