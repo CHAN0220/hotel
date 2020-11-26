@@ -1,0 +1,132 @@
+
+Junit 
+ 
+
+ 
+
+
+   转至元数据结尾 
+
+由 未知用户 (asnpiir)创建, 最后修改于十二月 19, 2019 
+转至元数据起始 
+
+
+What is Junit？
+
+JUnit is a simple, open source framework to write and run repeatable tests. It is an instance of the xUnit architecture for unit testing frameworks. JUnit features include:
+•Assertions for testing expected results
+•Test fixtures for sharing common test data
+•Test runners for running tests
+
+Junit annotations
+
+
+
+
+
+
+Annotations
+ 
+Description
+ 
+
+@Test
+ 
+This annotation is a replacement of org.junit.TestCase which indicates that public void method to which it is attached can be executed as a test Case.
+ 
+
+@Before
+ 
+This annotation is used if you want to execute some statement such as preconditions before each test case.
+ 
+
+@BeforeClass
+ 
+This annotation is used if you want to execute some statements before all the test cases for e.g. test connection must be executed before all the test cases.
+ 
+
+@After
+ 
+This annotation can be used if you want to execute some statements after each Test Case for e.g resetting variables, deleting temporary files ,variables, etc.
+ 
+
+@AfterClass
+ 
+This annotation can be used if you want to execute some statements after all test cases for e.g. Releasing resources after executing all test cases.
+ 
+
+@Ignores
+ 
+This annotation can be used if you want to ignore some statements during test execution for e.g. disabling some test cases during test execution.
+ 
+
+@Test(timeout=500)
+ 
+This annotation can be used if you want to set some timeout during test execution for e.g. if you are working under some SLA (Service level agreement), and tests need to be completed within some specified time.
+ 
+
+@Test(expected=IllegalArgumentException.class)
+ 
+This annotation can be used if you want to handle some exception during test execution. For, e.g., if you want to check whether a particular method is throwing specified exception or not.
+ 
+
+ 
+
+Junit Assert
+
+JUnit provides overloaded assertion methods for all primitive types and Objects and arrays (of primitives or Objects).
+
+The parameter order is expected value followed by actual value.
+
+Optionally the first parameter can be a String message that is output on failure.
+
+There is a slightly different assertion, “assertThat” that has parameters of the optional failure message, the actual value, and a Matcher object.
+
+ 
+
+A representative of each assert method is shown.
+
+
+
+ 
+
+ How to use Junit in IDEA?
+
+Check the plugins
+
+
+
+Set up directory
+
+
+
+Demo
+
+ 
+
+AssertArrayEquals
+
+
+
+AssertThat
+
+Note that expected and actual are reversed compared to the other assert methods.
+
+
+
+
+
+
+Reference
+
+Junit
+
+https://junit.org/junit4/
+
+http://www.java2novice.com/junit-examples/junit-annotations/https://blog.csdn.net/u010675669/article/details/86574956
+
+https://github.com/junit-team/junit4/wiki/Assertions
+
+https://www.cnblogs.com/shangren/p/8039215.html
+
+ 
