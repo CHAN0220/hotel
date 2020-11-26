@@ -1,0 +1,234 @@
+
+SQL 
+ 
+
+ 
+
+
+   转至元数据结尾 
+
+由 未知用户 (asnpiir)创建, 最后修改于一月 03, 2020 
+转至元数据起始 
+
+
+What is SQL ?
+
+SQL is short for Structured Query Language. 
+
+SQL is a database programming language for querying and editing information stored in a certain database management system. 
+
+ 
+
+How to use SQL ?
+
+What we need ?
+
+DBMS(MySQL 8.0) & DBMS Connection Tool(Navicat Premium 12)
+
+       
+
+               
+
+
+
+
+ 
+
+Something is blocking me !
+
+I can’t connect to MySQL by Navicat !
+
+
+
+Why ?
+
+
+
+How to solve this shit ?
+
+
+
+Success !
+
+
+
+ 
+
+Create table named "persons"
+
+
+
+
+
+
+Create table named "orders"
+
+
+
+SQL SELECT statement
+
+ selects data for the LastName column from the table
+
+
+
+SQL SELECT DISTINCT statement
+
+The keyword DISTINCT is used to return a unique value.
+
+
+
+SQL ORDER BY statement
+
+Select City in descending order and Address in ascending order
+
+
+
+SQL INSERT INTO statement
+
+Insert data in the specified column
+
+ 
+
+
+
+
+
+
+SQL UPDATE statement
+
+Update Gates’s FirstName to ‘Mike’
+
+
+
+
+
+
+
+
+SQL DELETE statement
+
+Delete data about ‘mike’
+
+
+
+
+
+SQL Limit statement
+
+Select the 2nd to 3rd records
+
+
+
+ 
+
+ 
+
+SQL LIKE statement
+
+
+
+
+
+
+Wildcard
+ 
+description
+ 
+
+%
+ 
+Replace one or more characters
+ 
+
+_
+ 
+Replace only one character
+ 
+
+[charlist]
+ 
+Any single character in a character column
+ 
+
+[^charlist] or [!charlist]
+ 
+Any single character not in the character column
+ 
+
+ 
+
+ Select people from the "persons" table who live in cities that contain "lon"
+
+
+
+select people from the "Persons" table who live in cities that do not contain "lon"
+
+
+
+select people from the "Persons" table to start with "L", then an arbitrary character, then "n", then any character, and then "on"
+
+
+
+ 
+
+SQL BETWEEN statement
+
+select people between "Adams" (included) and "Carter" (not included) in alphabetical order
+
+
+
+select people outside the range, use the NOT operator
+
+
+
+SQL JOIN statement
+
+Different SQL JOIN
+
+In addition to the INNER JOIN we used in the example above, we can also use several other joins.
+
+The types of JOINs you can use and the differences between them are listed below.
+•JOIN: If there is at least one match in the table, return rows
+•LEFT JOIN: return all rows from the left table even if there is no match in the right table
+•RIGHT JOIN: return all rows from the right table even if there is no match in the left table
+•FULL JOIN: return a row as long as there is a match in one of the tables
+
+JOIN
+
+
+
+LEFT JOIN
+
+
+
+RIGHT JOIN
+
+
+
+FULL JOIN(ERROR)
+
+
+
+(Resolve)
+
+
+
+SQL COUNT() function
+
+The COUNT () function returns the number of rows that match the specified criteria
+
+
+
+SQL GROUP BY statement
+
+       Aggregate functions (such as SUM) often require the addition of a GROUP BY statement
+
+GROUP BY statement is used in combination with aggregate functions to group result sets based on one or more columns
+
+
+
+SQL HAVING statement
+
+The reason for adding the HAVING clause to SQL is that the WHERE keyword cannot be used with aggregate functions
+
+
